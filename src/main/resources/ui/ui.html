@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Lucid Ollama UI</title>
+  <style>body{font-family:Arial;padding:16px}#out{white-space:pre-wrap;background:#f6f6f6;padding:8px;border:1px solid #ddd}</style>
+</head>
+<body>
+  <h3>Lucid Ollama</h3>
+  <textarea id="prompt" rows="6" cols="60">Write a helper function in Kotlin that reverses a string.</textarea><br/>
+  <button id="send">Send to Ollama</button>
+  <h4>Response</h4>
+  <div id="out">(no response)</div>
+
+  <script>
+    function show(obj){
+      if (!obj) { document.getElementById('out').textContent = '(empty)'; return }
+      if (typeof obj === 'string') {
+        try {
+          const parsed = JSON.parse(obj)
+          renderParsed(parsed)
+        } catch (e) {
+          document.getElementById('out').textContent = obj
+        }
+      } else {
+        renderParsed(obj)
+      }
+    }
+
+    function renderParsed(parsed){
+      if (parsed.error) document.getElementById('out').textContent = 'Error: ' + parsed.error
+      else if (parsed.result) document.getElementById('out').textContent = parsed.result
+      else document.getElementById('out').textContent = JSON.stringify(parsed, null, 2)
+    }
+
+    async function callBridge(prompt){
+      if (window.__javaQuery) {
+        try {
+          const res = window.__javaQuery(prompt)
+          // __javaQuery may return a string or a promise-like value depending on environment; normalize
+          if (res && typeof res.then === 'function') {
+            return await res
+          }
+          return res
+        } catch (err) { return { error: err && err.message ? err.message : String(err) } }
+      } else {
+        return { error: 'No native bridge detected.' }
+      }
+    }
+
+    document.getElementById('send').addEventListener('click', async () => {
+      const prompt = document.getElementById('prompt').value
+      const out = await callBridge(prompt)
+      show(out)
+    })
+
+    // optional: receive responses via a global callback
+    window.__javaResponse = function(obj){
+      show(obj)
+    }
+  </script>
+</body>
+</html>

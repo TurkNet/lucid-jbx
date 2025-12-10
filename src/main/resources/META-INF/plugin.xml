@@ -1,0 +1,28 @@
+<idea-plugin>
+  <id>com.lucid.ollama</id>
+  <name>Lucid Ollama Assistant</name>
+  <vendor>Lucid</vendor>
+
+  <description>
+    Port of VSCode Ollama extension: provides local Ollama-backed code assistance via a tool window.
+  </description>
+
+  <version>0.1.0</version>
+
+  <depends>com.intellij.modules.platform</depends>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <toolWindowFactory
+      id="LucidOllama"
+      anchor="right"
+      factoryClass="com.lucid.ui.LucidToolWindowFactory"/>
+
+    <applicationConfigurable instance="com.lucid.settings.OllamaSettingsConfigurable" displayName="Lucid Ollama" key="com.lucid.settings" />
+  </extensions>
+
+  <actions>
+    <action id="Lucid.ShowToolWindow" class="com.lucid.actions.ShowToolWindowAction" text="Show Lucid Ollama">
+      <add-to-group group-id="ToolsMenu" anchor="last"/>
+    </action>
+  </actions>
+</idea-plugin>
