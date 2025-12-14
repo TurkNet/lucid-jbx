@@ -1,28 +1,33 @@
 <idea-plugin>
-  <id>com.lucid.ollama</id>
-  <name>Lucid Ollama Assistant</name>
-  <vendor>Lucid</vendor>
+  <id>com.turknet.devops.lucid-ollama</id>
+  <name>Lucid Chat</name>
+  <vendor email="devops@turknet.net.tr" url="https://www.turknet.net.tr">Turknet DevOps Team</vendor>
 
   <description>
-    Port of VSCode Ollama extension: provides local Ollama-backed code assistance via a tool window.
+    AI-powered code assistance via local or remote Ollama API. Provides chat and agent modes for intelligent code completion and automation. 
+    Supports file mentioning, persistent chat history, and project-wide context analysis.
   </description>
 
-  <version>0.1.0</version>
+  <version>1.0.0</version>
 
   <depends>com.intellij.modules.platform</depends>
 
   <extensions defaultExtensionNs="com.intellij">
     <toolWindowFactory
-      id="LucidOllama"
+      id="LucidAI"
       anchor="right"
+      displayName=""
       factoryClass="com.lucid.ui.LucidToolWindowFactory"/>
 
-    <applicationConfigurable instance="com.lucid.settings.OllamaSettingsConfigurable" displayName="Lucid Ollama" key="com.lucid.settings" />
+    <applicationConfigurable instance="com.lucid.settings.OllamaSettingsConfigurable" displayName="Lucid Chat" key="com.lucid.settings" />
+    
+    <codeInsight.inlayProvider language="*" implementationClass="com.lucid.ui.ChangeInlayHintsProvider" />
   </extensions>
 
   <actions>
-    <action id="Lucid.ShowToolWindow" class="com.lucid.actions.ShowToolWindowAction" text="Show Lucid Ollama">
+    <action id="Lucid.ShowToolWindow" class="com.lucid.actions.ShowToolWindowAction" text="Show Lucid Chat">
       <add-to-group group-id="ToolsMenu" anchor="last"/>
+      <add-to-group group-id="ViewMenu" anchor="last"/>
     </action>
   </actions>
 </idea-plugin>

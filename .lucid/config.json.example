@@ -1,0 +1,14 @@
+{
+  "ollamaEndpoint": "http://localhost:11434",
+  "modelName": "llama3",
+  "ollamaApiKey": "",
+  "ollamaApiKeyHeaderName": "Authorization",
+  "enableInlineCompletion": true,
+  "inlineCompletionTemperature": 0.2,
+  "enableStreamingStatus": false,
+  "logUnmaskedHeaders": false,
+  "ollamaExtraHeaders": {
+    "X-Request-Source": "lucid-intellij"
+  }
+}
+

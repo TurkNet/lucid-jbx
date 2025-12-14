@@ -1,0 +1,31 @@
+# Lucid Ollama Configuration
+# Bu dosyayı .lucid/config.yaml olarak kaydedin
+
+# Ollama API endpoint
+ollamaEndpoint: "http://localhost:11434"
+
+# Kullanılacak model
+modelName: "llama3"
+
+# API Key (opsiyonel)
+ollamaApiKey: ""
+
+# API Key header adı (varsayılan: Authorization)
+ollamaApiKeyHeaderName: "Authorization"
+
+# Inline completion özelliğini etkinleştir
+enableInlineCompletion: true
+
+# Inline completion temperature (0.0 - 2.0)
+inlineCompletionTemperature: 0.2
+
+# Streaming status göster
+enableStreamingStatus: false
+
+# Debug için header'ları maskesiz logla
+logUnmaskedHeaders: false
+
+# Ekstra HTTP header'ları
+ollamaExtraHeaders:
+  X-Request-Source: "lucid-intellij"
+
