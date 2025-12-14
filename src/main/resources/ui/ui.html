@@ -2,61 +2,1434 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Lucid Ollama UI</title>
-  <style>body{font-family:Arial;padding:16px}#out{white-space:pre-wrap;background:#f6f6f6;padding:8px;border:1px solid #ddd}</style>
+  <title>Lucid Chat</title>
+  <style>
+    :root {
+      --bg-color: #ffffff;
+      --text-color: #333333;
+      --border-color: #e0e0e0;
+      --secondary-bg-color: #f8f8f8;
+      --selection-bg-color: #007acc;
+      --selection-fg-color: #ffffff;
+      --button-bg-color: #e1e1e1;
+      --button-hover-bg-color: #d0d0d0;
+      --input-bg-color: #ffffff;
+      --input-border-color: #dddddd;
+      --link-color: #0066cc;
+      --error-color: #cc0000;
+      --success-color: #2e7d32;
+      --user-message-bg: #e3f2fd;
+      --assistant-message-bg: #f5f5f5;
+      --system-message-bg: #fff3cd;
+      --error-message-bg: #ffebee;
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text-color);
+      background: var(--bg-color);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--secondary-bg-color);
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+    }
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .header-button {
+      padding: 4px 12px;
+      border: 1px solid var(--border-color);
+      background: var(--button-bg-color);
+      color: var(--text-color);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.15s ease;
+    }
+    .header-button:hover {
+      background: var(--button-hover-bg-color);
+      border-color: var(--link-color);
+    }
+    .header-button.primary {
+      background: var(--selection-bg-color);
+      color: var(--selection-fg-color);
+      border-color: var(--selection-bg-color);
+    }
+    .header-button.primary:hover {
+      opacity: 0.9;
+    }
+    .sessions-sidebar {
+      position: fixed;
+      top: 0;
+      right: -300px;
+      width: 300px;
+      height: 100vh;
+      background: var(--secondary-bg-color);
+      border-left: 1px solid var(--border-color);
+      z-index: 9999;
+      transition: right 0.3s ease;
+      overflow-y: auto;
+      box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+    }
+    .sessions-sidebar.open {
+      right: 0;
+    }
+    .sessions-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .sessions-header h4 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .close-sidebar {
+      background: none;
+      border: none;
+      color: var(--text-color);
+      cursor: pointer;
+      font-size: 18px;
+      padding: 0;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .close-sidebar:hover {
+      opacity: 0.7;
+    }
+    .session-list {
+      padding: 8px;
+    }
+    .session-item {
+      padding: 10px 12px;
+      margin: 4px 0;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+      border-left: 3px solid transparent;
+    }
+    .session-item:hover {
+      background: var(--button-bg-color);
+    }
+    .session-item.active {
+      background: var(--selection-bg-color);
+      color: var(--selection-fg-color);
+      border-left-color: var(--link-color);
+    }
+    .session-item-title {
+      font-weight: 500;
+      font-size: 13px;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .session-item-meta {
+      font-size: 11px;
+      opacity: 0.7;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .session-item-delete {
+      background: none;
+      border: none;
+      color: var(--text-color);
+      cursor: pointer;
+      font-size: 12px;
+      padding: 2px 6px;
+      opacity: 0.5;
+      border-radius: 3px;
+    }
+    .session-item-delete:hover {
+      opacity: 1;
+      background: var(--error-color);
+      color: white;
+    }
+    .chat-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      background: var(--bg-color);
+    }
+    .message {
+      margin-bottom: 16px;
+      padding: 12px;
+      border-radius: 8px;
+      max-width: 85%;
+    }
+    .message.user {
+      background: var(--user-message-bg);
+      margin-left: auto;
+      text-align: right;
+    }
+    .message.assistant {
+      background: var(--assistant-message-bg);
+      margin-right: auto;
+    }
+    .message.system {
+      background: var(--system-message-bg);
+      margin: 0 auto;
+      text-align: center;
+      font-size: 12px;
+    }
+    .message.error {
+      background: var(--error-message-bg);
+      margin: 0 auto;
+      border-left: 3px solid var(--error-color);
+    }
+    .message-text {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .message-text.markdown {
+      white-space: normal;
+    }
+    .message-text.markdown h1,
+    .message-text.markdown h2,
+    .message-text.markdown h3 {
+      margin-top: 16px;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .message-text.markdown h1 {
+      font-size: 18px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 8px;
+    }
+    .message-text.markdown h2 {
+      font-size: 16px;
+    }
+    .message-text.markdown h3 {
+      font-size: 14px;
+    }
+    .message-text.markdown code {
+      background: var(--secondary-bg-color);
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+    }
+    .message-text.markdown pre {
+      background: var(--secondary-bg-color);
+      padding: 12px;
+      border-radius: 4px;
+      overflow-x: auto;
+      margin: 8px 0;
+      border: 1px solid var(--border-color);
+    }
+    .message-text.markdown pre code {
+      background: transparent;
+      padding: 0;
+      display: block;
+      white-space: pre;
+      font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--text-color);
+    }
+    .message-text.markdown ul,
+    .message-text.markdown ol {
+      margin: 8px 0;
+      padding-left: 24px;
+    }
+    .message-text.markdown li {
+      margin: 4px 0;
+    }
+    .message-text.markdown strong {
+      font-weight: 600;
+    }
+    .message-text.markdown blockquote {
+      border-left: 3px solid var(--border-color);
+      padding-left: 12px;
+      margin: 8px 0;
+      color: var(--text-color);
+      opacity: 0.8;
+    }
+    .apply-button {
+      margin-top: 12px;
+      padding: 8px 16px;
+      border: 1px solid var(--selection-bg-color);
+      background: var(--selection-bg-color);
+      color: var(--selection-fg-color);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .apply-button:hover {
+      opacity: 0.9;
+    }
+    .apply-button.inline-button {
+      background: var(--link-color);
+      opacity: 0.9;
+    }
+    .apply-button.inline-button:hover {
+      opacity: 1;
+    }
+    .code-block-wrapper {
+      position: relative;
+      margin: 8px 0;
+    }
+    .code-block-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .action-preview {
+      margin-top: 8px;
+      padding: 8px;
+      background: var(--input-bg-color);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+    }
+    .action-preview code {
+      display: block;
+      padding: 8px;
+      background: var(--secondary-bg-color);
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      overflow-x: auto;
+      color: var(--text-color);
+    }
+    .action-buttons {
+      margin-top: 8px;
+      display: flex;
+      gap: 8px;
+    }
+    .action-buttons button {
+      padding: 6px 12px;
+      border: 1px solid var(--border-color);
+      background: var(--button-bg-color);
+      color: var(--text-color);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .action-buttons button:hover {
+      background: var(--button-hover-bg-color);
+    }
+    .input-container {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border-color);
+      background: var(--secondary-bg-color);
+    }
+    .mode-selector {
+      margin-bottom: 8px;
+    }
+    .mode-selector select {
+      padding: 4px 8px;
+      border: 1px solid var(--input-border-color);
+      background: var(--input-bg-color);
+      color: var(--text-color);
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .input-row {
+      display: flex;
+      gap: 8px;
+      position: relative;
+      z-index: 1;
+    }
+    #prompt {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid var(--input-border-color);
+      background: var(--input-bg-color);
+      color: var(--text-color);
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 60px;
+      max-height: 200px;
+    }
+    #prompt::placeholder {
+      color: var(--text-color);
+      opacity: 0.5;
+    }
+    #send {
+      padding: 8px 16px;
+      border: none;
+      background: var(--selection-bg-color);
+      color: var(--selection-fg-color);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    #send:hover {
+      opacity: 0.9;
+    }
+    #send:disabled {
+      background: var(--border-color);
+      color: var(--text-color);
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .status {
+      padding: 8px 16px;
+      font-size: 12px;
+      color: var(--text-color);
+      opacity: 0.7;
+      text-align: center;
+      border-top: 1px solid var(--border-color);
+      background: var(--secondary-bg-color);
+    }
+    .status.streaming {
+      color: var(--link-color);
+      opacity: 1;
+    }
+    .status.error {
+      color: var(--error-color);
+      opacity: 1;
+    }
+    .history-item {
+      cursor: pointer;
+      padding: 4px 8px;
+      margin: 2px 0;
+      border-radius: 4px;
+      font-size: 11px;
+      color: var(--text-color);
+      opacity: 0.7;
+    }
+    .history-item:hover {
+      background: var(--button-bg-color);
+    }
+    .mention-dropdown {
+      position: fixed;
+      background: var(--input-bg-color);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      max-height: 250px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      z-index: 10000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1);
+      display: none;
+      min-width: 280px;
+      max-width: 400px;
+      padding: 4px 0;
+    }
+    .mention-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background-color 0.15s ease;
+      border-left: 3px solid transparent;
+    }
+    .mention-item:hover {
+      background: var(--selection-bg-color);
+      color: var(--selection-fg-color);
+      border-left-color: var(--link-color);
+    }
+    .mention-item.selected {
+      background: var(--selection-bg-color);
+      color: var(--selection-fg-color);
+      border-left-color: var(--link-color);
+      font-weight: 500;
+    }
+    .mention-item-icon {
+      font-size: 16px;
+      flex-shrink: 0;
+      width: 20px;
+      text-align: center;
+    }
+    .mention-item-name {
+      flex: 1;
+      font-weight: 500;
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .mention-item-path {
+      font-size: 11px;
+      opacity: 0.6;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 150px;
+      flex-shrink: 0;
+    }
+    .input-row {
+      position: relative;
+    }
+    .mention-tag {
+      display: inline-block;
+      background: var(--selection-bg-color);
+      color: var(--selection-fg-color);
+      padding: 2px 6px;
+      border-radius: 3px;
+      margin: 0 2px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+  </style>
 </head>
 <body>
-  <h3>Lucid Ollama</h3>
-  <textarea id="prompt" rows="6" cols="60">Write a helper function in Kotlin that reverses a string.</textarea><br/>
-  <button id="send">Send to Ollama</button>
-  <h4>Response</h4>
-  <div id="out">(no response)</div>
+  <div class="header">
+    <div class="header-actions">
+      <button class="header-button" id="newChatBtn">+ New Chat</button>
+      <button class="header-button" id="historyBtn">📋 History</button>
+    </div>
+  </div>
+  
+  <div class="sessions-sidebar" id="sessionsSidebar">
+    <div class="sessions-header">
+      <h4>Chat History</h4>
+      <button class="close-sidebar" id="closeSidebar">×</button>
+    </div>
+    <div class="session-list" id="sessionList">
+      <!-- Sessions will be loaded here -->
+    </div>
+  </div>
+  
+  <div class="chat-container" id="chatContainer">
+    <div class="message system">
+      <div class="message-text">Lucid Chat ready. Write a prompt and click Send.</div>
+    </div>
+  </div>
+  
+  <div class="status" id="status">Idle</div>
+  
+  <div class="input-container">
+    <div class="mode-selector">
+      <select id="modeSelect">
+        <option value="ask">Ask</option>
+        <option value="agent">Agent</option>
+      </select>
+    </div>
+    <div class="input-row">
+      <textarea id="prompt" placeholder="Type your message here... (use @ to mention files/folders)"></textarea>
+      <button id="send">Send</button>
+      <div class="mention-dropdown" id="mentionDropdown"></div>
+    </div>
+  </div>
 
   <script>
-    function show(obj){
-      if (!obj) { document.getElementById('out').textContent = '(empty)'; return }
-      if (typeof obj === 'string') {
-        try {
-          const parsed = JSON.parse(obj)
-          renderParsed(parsed)
-        } catch (e) {
-          document.getElementById('out').textContent = obj
+    let collectedText = '';
+    let currentMode = 'ask';
+    let mentionDropdownVisible = false;
+    let mentionItems = [];
+    let selectedMentionIndex = -1;
+    let mentionStartPos = -1;
+    let mentionQuery = '';
+
+    const chatContainer = document.getElementById('chatContainer');
+    const promptInput = document.getElementById('prompt');
+    const sendButton = document.getElementById('send');
+    const modeSelect = document.getElementById('modeSelect');
+    const statusDiv = document.getElementById('status');
+    const mentionDropdown = document.getElementById('mentionDropdown');
+    const newChatBtn = document.getElementById('newChatBtn');
+    const historyBtn = document.getElementById('historyBtn');
+    const sessionsSidebar = document.getElementById('sessionsSidebar');
+    const closeSidebar = document.getElementById('closeSidebar');
+    const sessionList = document.getElementById('sessionList');
+    let currentSessionId = null;
+
+    function appendMessage(text, role = 'assistant', options = {}) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${role}`;
+      
+      const textDiv = document.createElement('div');
+      textDiv.className = 'message-text';
+      
+      if (currentMode === 'agent' && role === 'assistant') {
+        textDiv.className += ' markdown';
+        textDiv.innerHTML = renderMarkdown(text);
+        
+        const applyButtons = extractApplyButtons(text);
+        if (applyButtons.length > 0) {
+          const buttonsContainer = document.createElement('div');
+          buttonsContainer.className = 'code-block-actions';
+          applyButtons.forEach(button => {
+            const applyBtn = document.createElement('button');
+            applyBtn.className = 'apply-button';
+            applyBtn.textContent = button.text;
+            applyBtn.onclick = () => {
+              sendApplyChange(button, false);
+            };
+            buttonsContainer.appendChild(applyBtn);
+            
+            if (button.oldCode) {
+              const inlineBtn = document.createElement('button');
+              inlineBtn.className = 'apply-button inline-button';
+              inlineBtn.textContent = `📝 Show Inline (${button.file})`;
+              inlineBtn.onclick = () => {
+                sendApplyChange(button, true);
+              };
+              buttonsContainer.appendChild(inlineBtn);
+            }
+          });
+          textDiv.appendChild(buttonsContainer);
         }
       } else {
-        renderParsed(obj)
+        textDiv.textContent = text;
+      }
+      
+      messageDiv.appendChild(textDiv);
+
+      if (options.actionPreview) {
+        const preview = options.actionPreview;
+        const previewDiv = document.createElement('div');
+        previewDiv.className = 'action-preview';
+        
+        const desc = document.createElement('div');
+        desc.textContent = `${preview.typeLabel}: ${preview.description || preview.command}`;
+        desc.style.marginBottom = '8px';
+        desc.style.fontWeight = '500';
+        previewDiv.appendChild(desc);
+
+        const code = document.createElement('code');
+        code.textContent = preview.snippet;
+        previewDiv.appendChild(code);
+
+        const buttons = document.createElement('div');
+        buttons.className = 'action-buttons';
+        
+        const runButton = document.createElement('button');
+        runButton.textContent = '▶ Run';
+        runButton.onclick = () => {
+          sendActionRun(preview.actionId);
+        };
+        buttons.appendChild(runButton);
+        
+        previewDiv.appendChild(buttons);
+        messageDiv.appendChild(previewDiv);
+      }
+
+      chatContainer.appendChild(messageDiv);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function updateStatus(text, streaming = false, level = 'info') {
+      statusDiv.textContent = text;
+      statusDiv.className = `status ${streaming ? 'streaming' : ''} ${level === 'error' ? 'error' : ''}`;
+    }
+
+    function setSendEnabled(enabled) {
+      sendButton.disabled = !enabled;
+    }
+
+    async function sendMessage() {
+      const prompt = promptInput.value.trim();
+      if (!prompt) return;
+
+      const mode = modeSelect.value;
+      currentMode = mode;
+
+      appendMessage(prompt, 'user');
+      promptInput.value = '';
+
+      setSendEnabled(false);
+      updateStatus('Sending prompt…', mode === 'ask');
+
+      try {
+        const request = {
+          type: 'send',
+          prompt: prompt,
+          mode: mode
+        };
+
+        if (window.__javaQuery) {
+          window.__javaQuery(JSON.stringify(request));
+        } else {
+          updateStatus('No native bridge detected', false, 'error');
+        }
+      } catch (err) {
+        updateStatus('Error: ' + (err.message || String(err)), false, 'error');
+        setSendEnabled(true);
       }
     }
 
-    function renderParsed(parsed){
-      if (parsed.error) document.getElementById('out').textContent = 'Error: ' + parsed.error
-      else if (parsed.result) document.getElementById('out').textContent = parsed.result
-      else document.getElementById('out').textContent = JSON.stringify(parsed, null, 2)
-    }
+    function sendActionRun(actionId) {
+      const request = {
+        type: 'actionRun',
+        actionId: actionId
+      };
 
-    async function callBridge(prompt){
       if (window.__javaQuery) {
-        try {
-          const res = window.__javaQuery(prompt)
-          // __javaQuery may return a string or a promise-like value depending on environment; normalize
-          if (res && typeof res.then === 'function') {
-            return await res
-          }
-          return res
-        } catch (err) { return { error: err && err.message ? err.message : String(err) } }
-      } else {
-        return { error: 'No native bridge detected.' }
+        window.__javaQuery(JSON.stringify(request));
       }
     }
 
-    document.getElementById('send').addEventListener('click', async () => {
-      const prompt = document.getElementById('prompt').value
-      const out = await callBridge(prompt)
-      show(out)
-    })
+    function handleResponse(obj) {
+      if (!obj || typeof obj !== 'object') return;
 
-    // optional: receive responses via a global callback
-    window.__javaResponse = function(obj){
-      show(obj)
+      const type = obj.type;
+      
+      switch (type) {
+        case 'append':
+          appendMessage(obj.text, obj.role || 'assistant', obj.options || {});
+          break;
+        case 'status':
+          updateStatus(obj.text, obj.streaming || false, obj.level || 'info');
+          if (!obj.streaming) {
+            setSendEnabled(true);
+          }
+          break;
+        case 'error':
+          appendMessage(obj.text, 'error');
+          updateStatus('Error occurred', false, 'error');
+          setSendEnabled(true);
+          break;
+        case 'history':
+          if (obj.entries && Array.isArray(obj.entries)) {
+            obj.entries.forEach(entry => {
+              appendMessage(entry.text, entry.role, entry.options || {});
+            });
+          }
+          break;
+        case 'fileList':
+          console.log('Received fileList response:', obj);
+          if (obj.files && Array.isArray(obj.files)) {
+            mentionItems = obj.files;
+            console.log('Setting mentionItems:', mentionItems.length, 'items');
+            updateMentionDropdown();
+          } else {
+            console.warn('fileList response has no files array:', obj);
+            mentionItems = [];
+            updateMentionDropdown();
+          }
+          break;
+        case 'sessions':
+          if (obj.sessions && Array.isArray(obj.sessions)) {
+            currentSessionId = obj.currentSessionId;
+            renderSessions(obj.sessions, obj.currentSessionId);
+          }
+          break;
+        case 'sessionCreated':
+          if (obj.session) {
+            currentSessionId = obj.session.id;
+            loadSessions();
+            clearChat();
+          }
+          break;
+        case 'sessionSwitched':
+          if (obj.sessionId && obj.entries) {
+            currentSessionId = obj.sessionId;
+            clearChat();
+            loadSessionEntries(obj.entries);
+            loadSessions();
+          }
+          break;
+        case 'sessionDeleted':
+          loadSessions();
+          break;
+      }
+    }
+
+    sendButton.addEventListener('click', sendMessage);
+    
+    newChatBtn.addEventListener('click', () => {
+      createNewSession();
+    });
+    
+    historyBtn.addEventListener('click', () => {
+      sessionsSidebar.classList.toggle('open');
+      if (sessionsSidebar.classList.contains('open')) {
+        loadSessions();
+      }
+    });
+    
+    closeSidebar.addEventListener('click', () => {
+      sessionsSidebar.classList.remove('open');
+    });
+    
+    loadSessions();
+    
+    function loadSessions() {
+      if (window.__javaQuery) {
+        const request = {
+          type: 'getSessions'
+        };
+        window.__javaQuery(JSON.stringify(request));
+      }
+    }
+    
+    function createNewSession() {
+      if (window.__javaQuery) {
+        const request = {
+          type: 'createSession'
+        };
+        window.__javaQuery(JSON.stringify(request));
+      }
+    }
+    
+    function switchSession(sessionId) {
+      if (window.__javaQuery) {
+        const request = {
+          type: 'switchSession',
+          sessionId: sessionId
+        };
+        window.__javaQuery(JSON.stringify(request));
+      }
+      sessionsSidebar.classList.remove('open');
+    }
+    
+    function deleteSession(sessionId, event) {
+      event.stopPropagation();
+      if (confirm('Bu chat\'i silmek istediğinize emin misiniz?')) {
+        if (window.__javaQuery) {
+          const request = {
+            type: 'deleteSession',
+            sessionId: sessionId
+          };
+          window.__javaQuery(JSON.stringify(request));
+        }
+      }
+    }
+    
+    function renderSessions(sessions, currentId) {
+      sessionList.innerHTML = '';
+      
+      if (sessions.length === 0) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.style.padding = '16px';
+        emptyDiv.style.textAlign = 'center';
+        emptyDiv.style.opacity = '0.6';
+        emptyDiv.textContent = 'Henüz chat yok';
+        sessionList.appendChild(emptyDiv);
+        return;
+      }
+      
+      sessions.forEach(session => {
+        const sessionDiv = document.createElement('div');
+        sessionDiv.className = 'session-item';
+        if (session.id === currentId) {
+          sessionDiv.classList.add('active');
+        }
+        
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'session-item-title';
+        titleDiv.textContent = session.title || 'New Chat';
+        
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'session-item-meta';
+        
+        const dateSpan = document.createElement('span');
+        const date = new Date(session.updatedAt);
+        dateSpan.textContent = formatDate(date);
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'session-item-delete';
+        deleteBtn.textContent = '🗑️';
+        deleteBtn.title = 'Sil';
+        deleteBtn.onclick = (e) => deleteSession(session.id, e);
+        
+        metaDiv.appendChild(dateSpan);
+        metaDiv.appendChild(deleteBtn);
+        
+        sessionDiv.appendChild(titleDiv);
+        sessionDiv.appendChild(metaDiv);
+        
+        sessionDiv.onclick = () => {
+          if (session.id !== currentId) {
+            switchSession(session.id);
+          }
+        };
+        
+        sessionList.appendChild(sessionDiv);
+      });
+    }
+    
+    function clearChat() {
+      chatContainer.innerHTML = '<div class="message system"><div class="message-text">Lucid Chat ready. Write a prompt and click Send.</div></div>';
+    }
+    
+    function loadSessionEntries(entries) {
+      entries.forEach(entry => {
+        appendMessage(entry.text, entry.role || 'assistant', entry.options || {});
+      });
+    }
+    
+    function formatDate(timestamp) {
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diff = now - date;
+      const minutes = Math.floor(diff / 60000);
+      const hours = Math.floor(diff / 3600000);
+      const days = Math.floor(diff / 86400000);
+      
+      if (minutes < 1) return 'Az önce';
+      if (minutes < 60) return `${minutes} dk önce`;
+      if (hours < 24) return `${hours} saat önce`;
+      if (days < 7) return `${days} gün önce`;
+      
+      return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+    }
+    promptInput.addEventListener('keydown', (e) => {
+      if (mentionDropdownVisible) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          selectedMentionIndex = Math.min(selectedMentionIndex + 1, mentionItems.length - 1);
+          updateMentionDropdown();
+          return;
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          selectedMentionIndex = Math.max(selectedMentionIndex - 1, -1);
+          updateMentionDropdown();
+          return;
+        } else if (e.key === 'Enter' || e.key === 'Tab') {
+          e.preventDefault();
+          if (selectedMentionIndex >= 0 && selectedMentionIndex < mentionItems.length) {
+            insertMention(mentionItems[selectedMentionIndex]);
+          }
+          return;
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          hideMentionDropdown();
+          return;
+        }
+      }
+      
+      if (e.key === 'Enter' && e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+      else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+    
+    promptInput.addEventListener('input', (e) => {
+      checkForMention();
+      if (mentionDropdownVisible) {
+        positionMentionDropdown();
+      }
+    });
+    
+    promptInput.addEventListener('click', () => {
+      checkForMention();
+      if (mentionDropdownVisible) {
+        positionMentionDropdown();
+      }
+    });
+    
+    promptInput.addEventListener('keyup', (e) => {
+      if (mentionDropdownVisible && (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        setTimeout(() => positionMentionDropdown(), 0);
+      }
+    });
+    
+    promptInput.addEventListener('scroll', () => {
+      if (mentionDropdownVisible) {
+        positionMentionDropdown();
+      }
+    });
+    
+    document.addEventListener('click', (e) => {
+      if (!promptInput.contains(e.target) && !mentionDropdown.contains(e.target)) {
+        hideMentionDropdown();
+      }
+    });
+    
+    function checkForMention() {
+      const text = promptInput.value;
+      const cursorPos = promptInput.selectionStart;
+      
+      let atIndex = -1;
+      for (let i = cursorPos - 1; i >= 0; i--) {
+        if (text[i] === '@') {
+          atIndex = i;
+          break;
+        }
+        if (text[i] === ' ' || text[i] === '\n') {
+          break;
+        }
+      }
+      
+      if (atIndex >= 0) {
+        const query = text.substring(atIndex + 1, cursorPos);
+        mentionStartPos = atIndex;
+        mentionQuery = query;
+        console.log('@ detected, query:', query, 'at position:', atIndex);
+        showMentionDropdown(query);
+      } else {
+        if (mentionDropdownVisible) {
+          console.log('Hiding mention dropdown (no @ found)');
+        }
+        hideMentionDropdown();
+      }
+    }
+    
+    function showMentionDropdown(query) {
+      mentionDropdownVisible = true;
+      selectedMentionIndex = -1;
+      
+      console.log('showMentionDropdown called with query:', query);
+      
+      positionMentionDropdown();
+      
+      mentionDropdown.style.display = 'block';
+      mentionDropdown.innerHTML = '<div class="mention-item">Yükleniyor...</div>';
+      
+      if (window.__javaQuery) {
+        const request = {
+          type: 'listFiles',
+          query: query
+        };
+        console.log('Sending listFiles request:', request);
+        window.__javaQuery(JSON.stringify(request));
+      } else {
+        console.error('window.__javaQuery is not available');
+        mentionDropdown.innerHTML = '<div class="mention-item">Backend bağlantısı yok</div>';
+      }
+    }
+    
+    function positionMentionDropdown() {
+      const text = promptInput.value;
+      const cursorPos = promptInput.selectionStart;
+      
+      let atIndex = -1;
+      for (let i = cursorPos - 1; i >= 0; i--) {
+        if (text[i] === '@') {
+          atIndex = i;
+          break;
+        }
+        if (text[i] === ' ' || text[i] === '\n') {
+          break;
+        }
+      }
+      
+      if (atIndex < 0) {
+        const rect = promptInput.getBoundingClientRect();
+        mentionDropdown.style.top = `${rect.bottom + window.scrollY + 4}px`;
+        mentionDropdown.style.left = `${rect.left + window.scrollX}px`;
+        mentionDropdown.style.width = `${Math.max(rect.width, 300)}px`;
+        return;
+      }
+      
+      const textBeforeCursor = text.substring(0, atIndex);
+      const textAfterAt = text.substring(atIndex, cursorPos);
+      
+      const style = window.getComputedStyle(promptInput);
+      const font = `${style.fontSize} ${style.fontFamily}`;
+      const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize);
+      const paddingLeft = parseFloat(style.paddingLeft) || 0;
+      const paddingTop = parseFloat(style.paddingTop) || 0;
+      const borderLeft = parseFloat(style.borderLeftWidth) || 0;
+      const borderTop = parseFloat(style.borderTopWidth) || 0;
+      
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      context.font = font;
+      const textWidth = context.measureText(textBeforeCursor).width;
+      
+      const lines = textBeforeCursor.split('\n');
+      const lineNumber = lines.length - 1;
+      const currentLineText = lines[lines.length - 1];
+      const currentLineWidth = context.measureText(currentLineText).width;
+      
+      const scrollTop = promptInput.scrollTop;
+      const scrollLeft = promptInput.scrollLeft;
+      
+      const rect = promptInput.getBoundingClientRect();
+      
+      const x = rect.left + window.scrollX + paddingLeft + borderLeft + currentLineWidth - scrollLeft;
+      const y = rect.top + window.scrollY + paddingTop + borderTop + (lineNumber * lineHeight) - scrollTop;
+      
+      mentionDropdown.style.position = 'fixed';
+      
+      const itemCount = mentionItems.length || 5;
+      const itemHeight = 42;
+      const estimatedDropdownHeight = Math.min(250, itemCount * itemHeight + 8);
+      
+      const dropdownTop = y - estimatedDropdownHeight - 8;
+      
+      if (dropdownTop < 20) {
+        mentionDropdown.style.top = `${y + lineHeight + 8}px`;
+      } else {
+        mentionDropdown.style.top = `${dropdownTop}px`;
+      }
+      
+      mentionDropdown.style.left = `${x}px`;
+      mentionDropdown.style.width = '300px';
+      mentionDropdown.style.maxWidth = `${Math.min(400, window.innerWidth - x - 20)}px`;
+    }
+    
+    function hideMentionDropdown() {
+      mentionDropdownVisible = false;
+      mentionDropdown.style.display = 'none';
+      mentionItems = [];
+      selectedMentionIndex = -1;
+    }
+    
+    function updateMentionDropdown() {
+      mentionDropdown.innerHTML = '';
+      
+      if (mentionItems.length === 0) {
+        const emptyItem = document.createElement('div');
+        emptyItem.className = 'mention-item';
+        emptyItem.textContent = 'Dosya bulunamadı...';
+        mentionDropdown.appendChild(emptyItem);
+        setTimeout(() => positionMentionDropdown(), 0);
+        return;
+      }
+      
+      mentionItems.forEach((item, index) => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'mention-item';
+        if (index === selectedMentionIndex) {
+          itemDiv.classList.add('selected');
+        }
+        
+        const icon = document.createElement('span');
+        icon.className = 'mention-item-icon';
+        icon.textContent = item.isDirectory ? '📁' : '📄';
+        
+        const name = document.createElement('span');
+        name.className = 'mention-item-name';
+        name.textContent = item.name;
+        
+        const path = document.createElement('span');
+        path.className = 'mention-item-path';
+        path.textContent = item.path;
+        
+        itemDiv.appendChild(icon);
+        itemDiv.appendChild(name);
+        itemDiv.appendChild(path);
+        
+        itemDiv.addEventListener('click', () => {
+          insertMention(item);
+        });
+        
+        mentionDropdown.appendChild(itemDiv);
+      });
+      
+      setTimeout(() => positionMentionDropdown(), 0);
+      
+      if (selectedMentionIndex >= 0) {
+        const selectedItem = mentionDropdown.children[selectedMentionIndex];
+        if (selectedItem) {
+          selectedItem.scrollIntoView({ block: 'nearest' });
+        }
+      }
+    }
+    
+    function insertMention(item) {
+      const text = promptInput.value;
+      const before = text.substring(0, mentionStartPos);
+      const after = text.substring(promptInput.selectionStart);
+      const mentionText = `@${item.path}`;
+      
+      promptInput.value = before + mentionText + ' ' + after;
+      
+      const newPos = before.length + mentionText.length + 1;
+      promptInput.setSelectionRange(newPos, newPos);
+      promptInput.focus();
+      
+      hideMentionDropdown();
+    }
+
+    window.__applyTheme = function(theme) {
+      if (!theme) return;
+      
+      const root = document.documentElement;
+      root.style.setProperty('--bg-color', theme.bgColor || '#ffffff');
+      root.style.setProperty('--text-color', theme.textColor || '#333333');
+      root.style.setProperty('--border-color', theme.borderColor || '#e0e0e0');
+      root.style.setProperty('--secondary-bg-color', theme.secondaryBgColor || '#f8f8f8');
+      root.style.setProperty('--selection-bg-color', theme.selectionBgColor || '#007acc');
+      root.style.setProperty('--selection-fg-color', theme.selectionFgColor || '#ffffff');
+      root.style.setProperty('--button-bg-color', theme.buttonBgColor || '#e1e1e1');
+      root.style.setProperty('--button-hover-bg-color', theme.buttonHoverBgColor || '#d0d0d0');
+      root.style.setProperty('--input-bg-color', theme.inputBgColor || '#ffffff');
+      root.style.setProperty('--input-border-color', theme.inputBorderColor || '#dddddd');
+      root.style.setProperty('--link-color', theme.linkColor || '#0066cc');
+      root.style.setProperty('--error-color', theme.errorColor || '#cc0000');
+      root.style.setProperty('--success-color', theme.successColor || '#2e7d32');
+      
+      if (theme.isDark) {
+        root.style.setProperty('--user-message-bg', 'rgba(88, 157, 246, 0.15)');
+        root.style.setProperty('--assistant-message-bg', 'rgba(255, 255, 255, 0.05)');
+        root.style.setProperty('--system-message-bg', 'rgba(255, 193, 7, 0.15)');
+        root.style.setProperty('--error-message-bg', 'rgba(255, 107, 104, 0.15)');
+      } else {
+        root.style.setProperty('--user-message-bg', '#e3f2fd');
+        root.style.setProperty('--assistant-message-bg', '#f5f5f5');
+        root.style.setProperty('--system-message-bg', '#fff3cd');
+        root.style.setProperty('--error-message-bg', '#ffebee');
+      }
+    };
+
+    window.handleResponse = handleResponse;
+
+    window.__loadHistory = function(entries) {
+      if (entries && Array.isArray(entries)) {
+        entries.forEach(entry => {
+          appendMessage(entry.text, entry.role, entry.options || {});
+        });
+      }
+    };
+
+    window.__javaResponse = function(obj) {
+      handleResponse(obj);
+    };
+
+    function renderMarkdown(text) {
+      let html = text;
+      
+      const codeBlocks = [];
+      
+      const parts = [];
+      let lastIndex = 0;
+      let searchPos = 0;
+      
+      while (true) {
+        const start = html.indexOf('```', searchPos);
+        if (start === -1) {
+          if (lastIndex < html.length) {
+            parts.push({ type: 'text', content: html.substring(lastIndex) });
+          }
+          break;
+        }
+        
+        if (start > lastIndex) {
+          parts.push({ type: 'text', content: html.substring(lastIndex, start) });
+        }
+        
+        const afterBackticks = html.substring(start + 3);
+        
+        const firstNewline = afterBackticks.indexOf('\n');
+        let lang = '';
+        let codeStartPos = 0;
+        
+        if (firstNewline !== -1) {
+          const firstLine = afterBackticks.substring(0, firstNewline).trim();
+          if (firstLine && /^[a-zA-Z0-9_-]+$/.test(firstLine) && firstLine.length <= 20) {
+            const afterFirstLine = afterBackticks.substring(firstNewline + 1);
+            if (afterFirstLine.trim().length > 0) {
+              lang = firstLine;
+              codeStartPos = firstNewline + 1;
+            } else {
+              codeStartPos = firstNewline + 1;
+            }
+          } else {
+            codeStartPos = firstNewline + 1;
+          }
+        }
+        
+        const codeSection = afterBackticks.substring(codeStartPos);
+        const endPos = codeSection.indexOf('```');
+        if (endPos === -1) {
+          parts.push({ type: 'text', content: html.substring(start) });
+          break;
+        }
+        
+        const codeContent = codeSection.substring(0, endPos);
+        
+        const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
+        codeBlocks.push({ placeholder, lang, code: codeContent.trim() });
+        parts.push({ type: 'code', placeholder: placeholder });
+        
+        lastIndex = start + 3 + codeStartPos + endPos + 3;
+        searchPos = lastIndex;
+      }
+      
+      html = parts.map(part => {
+        if (part.type === 'code') {
+          return part.placeholder;
+        }
+        return part.content;
+      }).join('');
+      
+      html = html.replace(/^### (.*)$/gim, '<h3>$1</h3>');
+      html = html.replace(/^## (.*)$/gim, '<h2>$1</h2>');
+      html = html.replace(/^# (.*)$/gim, '<h1>$1</h1>');
+      
+      html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      
+      html = html.replace(/`([^`\n]+)`/g, (match, code) => {
+        if (code.startsWith('CODE_BLOCK_')) return match;
+        return '<code>' + escapeHtml(code) + '</code>';
+      });
+      
+      const lines = html.split('\n');
+      let inList = false;
+      let listItems = [];
+      const processedLines = [];
+      
+      lines.forEach((line, index) => {
+        const trimmed = line.trim();
+        if (trimmed.match(/^[\-\*\+]\s+/)) {
+          if (!inList) {
+            inList = true;
+            listItems = [];
+          }
+          const itemContent = trimmed.replace(/^[\-\*\+]\s+/, '');
+          listItems.push(itemContent);
+        } else if (trimmed === '' && inList) {
+          if (listItems.length > 0) {
+            processedLines.push('<ul>' + listItems.map(item => `<li>${processInlineMarkdown(item)}</li>`).join('') + '</ul>');
+            listItems = [];
+            inList = false;
+          }
+          processedLines.push('');
+        } else {
+          if (inList && listItems.length > 0) {
+            processedLines.push('<ul>' + listItems.map(item => `<li>${processInlineMarkdown(item)}</li>`).join('') + '</ul>');
+            listItems = [];
+            inList = false;
+          }
+          processedLines.push(line);
+        }
+      });
+      
+      if (inList && listItems.length > 0) {
+        processedLines.push('<ul>' + listItems.map(item => `<li>${processInlineMarkdown(item)}</li>`).join('') + '</ul>');
+      }
+      
+      html = processedLines.join('\n');
+      
+      codeBlocks.forEach(block => {
+        const langClass = block.lang ? `language-${block.lang}` : '';
+        const codeHtml = `<pre><code class="${langClass}">${escapeHtml(block.code)}</code></pre>`;
+        html = html.replace(block.placeholder, codeHtml);
+      });
+      
+      html = html.split(/\n\n+/).map(para => {
+        const trimmed = para.trim();
+        if (!trimmed) return '';
+        if (trimmed.match(/^<[h|u|o|p|d|pre]/)) {
+          return trimmed;
+        }
+        return '<p>' + trimmed + '</p>';
+      }).filter(p => p).join('\n');
+      
+      html = html.replace(/([^>])\n([^<])/g, '$1<br>$2');
+      
+      return html;
+    }
+
+    function processInlineMarkdown(text) {
+      let result = text;
+      result = result.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      result = result.replace(/`([^`]+)`/g, '<code>$1</code>');
+      return result;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function extractApplyButtons(text) {
+      const buttons = [];
+      const regex = /## Düzenleme Önerileri[\s\S]*?(?=##|$)/g;
+      const match = regex.exec(text);
+      
+      if (match) {
+        const section = match[0];
+        const fileRegex = /\*\*Dosya:\*\*\s*(.+?)(?:\n|$)/g;
+        
+        const files = [];
+        let fileMatch;
+        while ((fileMatch = fileRegex.exec(section)) !== null) {
+          const fileName = fileMatch[1].trim().replace(/`/g, '').replace(/\*\*/g, '');
+          files.push(fileName);
+        }
+        
+        files.forEach((fileName) => {
+          const fileSectionStart = section.indexOf(`**Dosya:** ${fileName}`);
+          if (fileSectionStart === -1) return;
+          
+          let fileSectionEnd = section.indexOf('**Dosya:**', fileSectionStart + 1);
+          if (fileSectionEnd === -1) {
+            fileSectionEnd = section.length;
+          }
+          const fileSection = section.substring(fileSectionStart, fileSectionEnd);
+          
+          const fullFileHeaderIndex = fileSection.indexOf('**Tam Dosya (Düzeltilmiş):**');
+          if (fullFileHeaderIndex !== -1) {
+            const afterHeader = fileSection.substring(fullFileHeaderIndex + '**Tam Dosya (Düzeltilmiş):**'.length);
+            
+            const codeBlockStart = afterHeader.indexOf('```');
+            if (codeBlockStart !== -1) {
+              const afterBackticks = afterHeader.substring(codeBlockStart + 3);
+              const langMatch = afterBackticks.match(/^(\w+)?\s*\n/);
+              const codeStartIndex = langMatch ? langMatch[0].length : 0;
+              
+              const codeBlockEnd = afterBackticks.indexOf('```', codeStartIndex);
+              if (codeBlockEnd !== -1) {
+                const codeContent = afterBackticks.substring(codeStartIndex, codeBlockEnd).trim();
+                
+                if (codeContent) {
+                  buttons.push({
+                    file: fileName,
+                    code: codeContent,
+                    oldCode: null,
+                    text: `Apply to ${fileName}`
+                  });
+                }
+              }
+            }
+          }
+          
+          const hasThisFile = buttons.some(b => b.file === fileName);
+          if (!hasThisFile) {
+            const oldCodeMatch = fileSection.match(/\*\*Eski Kod:\*\*\s*```[\w]*\s*\n?([\s\S]*?)```/);
+            const newCodeMatch = fileSection.match(/\*\*Yeni Kod:\*\*\s*```[\w]*\s*\n?([\s\S]*?)```/);
+            
+            if (oldCodeMatch && newCodeMatch) {
+              buttons.push({
+                file: fileName,
+                code: newCodeMatch[1].trim(),
+                oldCode: oldCodeMatch[1].trim(),
+                text: `Apply to ${fileName}`
+              });
+            } else if (newCodeMatch) {
+              buttons.push({
+                file: fileName,
+                code: newCodeMatch[1].trim(),
+                oldCode: null,
+                text: `Apply to ${fileName} (full replace)`
+              });
+            }
+          }
+        });
+      }
+      
+      return buttons;
+    }
+
+    function sendApplyChange(button, showInline = false) {
+      const request = {
+        type: 'applyChange',
+        file: button.file,
+        code: button.code,
+        oldCode: button.oldCode || null,
+        showInlineButtons: showInline
+      };
+
+      if (window.__javaQuery) {
+        window.__javaQuery(JSON.stringify(request));
+      }
     }
   </script>
 </body>
