@@ -70,14 +70,12 @@ jobs:
           fi
 
       - name: Update version in build.gradle.kts
-        if: github.event_name == 'workflow_dispatch'
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           sed -i "s/^version = \".*\"/version = \"${VERSION}\"/" build.gradle.kts
           cat build.gradle.kts | grep version
 
       - name: Update version in plugin.xml
-        if: github.event_name == 'workflow_dispatch'
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           sed -i "s/<version>.*<\/version>/<version>${VERSION}<\/version>/" src/main/resources/META-INF/plugin.xml
