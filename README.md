@@ -25,7 +25,7 @@ To build the plugin:
 
 The built file is located at:
 ```
-build/distributions/lucid-ollama-intellij-0.1.0-plugin.zip
+build/distributions/lucid-chat-intellij-1.0.0-plugin.zip
 ```
 
 ### Installing to IntelliJ IDEA
@@ -39,7 +39,7 @@ build/distributions/lucid-ollama-intellij-0.1.0-plugin.zip
 5. Select **Install Plugin from Disk...**
 6. Select the following file:
    ```
-   build/distributions/lucid-ollama-intellij-0.1.0-plugin.zip
+   build/distributions/lucid-chat-intellij-1.0.0-plugin.zip
    ```
 7. Click **OK**
 8. **Restart** IntelliJ (Restart IDE button will appear)
@@ -187,6 +187,42 @@ Analyzes project files and provides code assistance. You can mention specific fi
 # Package the plugin
 ./gradlew buildPlugin
 ```
+
+## 🚀 Release Process
+
+This project uses GitHub Actions for automated releases with semantic versioning.
+
+### Automatic Release (Recommended)
+
+1. Go to **Actions** tab in GitHub
+2. Select **Release Plugin** workflow
+3. Click **Run workflow**
+4. Choose version bump type:
+   - **patch**: 1.0.0 → 1.0.1 (bug fixes)
+   - **minor**: 1.0.0 → 1.1.0 (new features)
+   - **major**: 1.0.0 → 2.0.0 (breaking changes)
+5. Click **Run workflow**
+
+The workflow will:
+- Automatically increment the version
+- Build the plugin
+- Create a GitHub release
+- Upload the plugin ZIP file as a release asset
+- Commit version changes back to the repository
+
+### Manual Release via Tag
+
+Alternatively, you can create a release by pushing a tag:
+
+```bash
+git tag v1.0.1
+git push origin v1.0.1
+```
+
+The workflow will automatically:
+- Build the plugin
+- Create a GitHub release with the tag version
+- Upload the plugin ZIP file
 
 ## 📝 Notes
 

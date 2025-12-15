@@ -100,7 +100,7 @@ data class OllamaState(
 
 @State(
     name = "OllamaSettings",
-    storages = [Storage(value = "lucid-ollama-settings.xml", roamingType = RoamingType.DISABLED)]
+    storages = [Storage(value = "lucid-chat-settings.xml", roamingType = RoamingType.DISABLED)]
 )
 class OllamaSettings : PersistentStateComponent<OllamaState> {
     private var myState = OllamaState()
