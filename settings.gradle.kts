@@ -1,1 +1,1 @@
-rootProject.name = "lucid-ollama-intellij"
+rootProject.name = "lucid-chat-intellij"

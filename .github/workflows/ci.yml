@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build project
+        run: ./gradlew build
+
+      - name: Build plugin
+        run: ./gradlew buildPlugin
+
+      - name: Check plugin output
+        run: |
+          if [ ! -f build/distributions/*.zip ]; then
+            echo "Plugin ZIP file not found!"
+            exit 1
+          fi
+          ls -lh build/distributions/

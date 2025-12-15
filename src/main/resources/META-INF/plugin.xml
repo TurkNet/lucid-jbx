@@ -1,5 +1,5 @@
 <idea-plugin>
-  <id>com.turknet.devops.lucid-ollama</id>
+  <id>com.turknet.devops.lucid-chat</id>
   <name>Lucid Chat</name>
   <vendor email="devops@turknet.net.tr" url="https://www.turknet.net.tr">Turknet DevOps Team</vendor>
 
